@@ -104,13 +104,15 @@ class RequestController extends Controller
 
             $rma->update(['rma_status_id' => DefaultRMAStatusEnum::PENDING->value]);
 
-            $this->rmaMessageRepository->create([
+            // SECURITY-PATCH: #6 — is_admin set explicitly after create
+            $rmaMsg = $this->rmaMessageRepository->create([
                 'message' => trans('admin::app.sales.rma.all-rma.view.conversation-process'),
                 'rma_id' => $id,
-                'is_admin' => 1,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
+            $rmaMsg->is_admin = 1;
+            $rmaMsg->save();
 
             try {
                 Mail::queue(new CustomerRMAStatusNotification($rma));
@@ -246,11 +248,13 @@ class RequestController extends Controller
         /**
          * Initial message indicating the processing of the RMA request.
          */
-        $this->rmaMessageRepository->create([
+        // SECURITY-PATCH: #6
+        $rmaMsg = $this->rmaMessageRepository->create([
             'rma_id' => $rma->id,
             'message' => trans('shop::app.rma.mail.customer-conversation.process'),
-            'is_admin' => 1,
         ]);
+        $rmaMsg->is_admin = 1;
+        $rmaMsg->save();
 
         /**
          * Creation of RMA images for the newly created RMA record.
@@ -561,14 +565,16 @@ class RequestController extends Controller
     {
         $rma->update($data);
 
-        $this->rmaMessageRepository->create([
+        // SECURITY-PATCH: #6
+        $rmaMsg = $this->rmaMessageRepository->create([
             'message' => trans('admin::app.sales.rma.all-rma.view.status-message', [
                 'id' => $rma->id,
                 'status' => $rma->fresh()->status->title,
             ]),
             'rma_id' => $rma->id,
-            'is_admin' => 1,
         ]);
+        $rmaMsg->is_admin = 1;
+        $rmaMsg->save();
 
         try {
             Mail::queue(new CustomerRMAStatusNotification($rma));

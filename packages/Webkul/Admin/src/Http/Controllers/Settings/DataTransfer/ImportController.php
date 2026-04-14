@@ -67,12 +67,14 @@ class ImportController extends Controller
         $supportedFormats = implode(',', $this->supportedFormats);
 
         $this->validate(request(), [
-            'type' => 'required|in:'.$importers,
-            'action' => 'required|in:append,delete',
-            'validation_strategy' => 'required|in:stop-on-errors,skip-errors',
-            'allowed_errors' => 'required|integer|min:0',
-            'field_separator' => 'required',
-            'file' => 'required|file|extensions:'.$supportedFormats.'|mimetypes:text/csv,text/plain,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/xml,application/xml',
+            'type'                  => 'required|in:'.$importers,
+            'action'                => 'required|in:append,delete',
+            'validation_strategy'   => 'required|in:stop-on-errors,skip-errors',
+            'allowed_errors'        => 'required|integer|min:0',
+            'field_separator'       => 'required',
+            'file'                  => 'required|file|extensions:'.$supportedFormats.'|mimetypes:text/csv,text/plain,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/xml,application/xml',
+            // SECURITY-PATCH: #12 — whitelist safe path characters; blocks ../ traversal and shell metacharacters
+            'images_directory_path' => ['nullable', 'regex:/^[a-zA-Z0-9\/\-_.]+$/'],
         ]);
 
         Event::dispatch('data_transfer.imports.create.before');

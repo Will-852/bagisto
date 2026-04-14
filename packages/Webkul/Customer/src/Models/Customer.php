@@ -47,6 +47,7 @@ class Customer extends Authenticatable implements CustomerContract
      *
      * @var array
      */
+    // SECURITY-PATCH: #17 — is_verified removed from fillable to prevent email verification bypass via mass assignment
     protected $fillable = [
         'first_name',
         'last_name',
@@ -61,7 +62,6 @@ class Customer extends Authenticatable implements CustomerContract
         'channel_id',
         'subscribed_to_news_letter',
         'status',
-        'is_verified',
         'is_suspended',
     ];
 

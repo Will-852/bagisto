@@ -3,6 +3,7 @@
 namespace Webkul\RMA\Repositories;
 
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Webkul\Core\Eloquent\Repository;
 use Webkul\RMA\Contracts\RMAImage;
 
@@ -21,10 +22,19 @@ class RMAImageRepository extends Repository
      */
     public function manageImages($requestImages, $rma): void
     {
+        // SECURITY-PATCH: #7 — replace client filename with server-generated safe name + extension whitelist
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'];
+
         foreach ($requestImages as $itemImage) {
+            $ext = strtolower($itemImage->getClientOriginalExtension());
+
+            if (! in_array($ext, $allowed)) {
+                continue;
+            }
+
             $this->create([
                 'rma_id' => $rma->id,
-                'path' => $itemImage->getClientOriginalName(),
+                'path' => 'rma/'.$rma->id.'/'.Str::random(32).'.'.$ext,
             ]);
         }
 

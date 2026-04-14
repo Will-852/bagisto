@@ -1,2 +1,14 @@
 *
 !.gitignore
+!payment/
+payment/*
+!payment/cart-qr-panel.blade.php
+!vendor/
+vendor/*
+!vendor/shop/
+vendor/shop/*
+!vendor/shop/checkout/
+vendor/shop/checkout/*
+!vendor/shop/checkout/onepage/
+vendor/shop/checkout/onepage/*
+!vendor/shop/checkout/onepage/payment.blade.php

@@ -241,6 +241,12 @@ return [
         'route' => 'admin.catalog.products.delete',
         'sort' => 4,
     ], [
+        // SECURITY-PATCH: #1 — register guest-checkout ACL so role-based access works
+        'key'   => 'catalog.products.guest-checkout',
+        'name'  => 'admin::app.acl.guest-checkout',
+        'route' => 'admin.products.guest-checkout.index',
+        'sort'  => 5,
+    ], [
         'key' => 'catalog.categories',
         'name' => 'admin::app.acl.categories',
         'route' => 'admin.catalog.categories.index',
@@ -335,6 +341,12 @@ return [
         'name' => 'admin::app.acl.delete',
         'route' => 'admin.customers.customers.delete',
         'sort' => 3,
+    ], [
+        // SECURITY-PATCH: #11 — register login-as-customer so it can be role-gated
+        'key'   => 'customers.customers.login_as_customer',
+        'name'  => 'admin::app.acl.login-as-customer',
+        'route' => 'admin.customers.customers.login_as_customer',
+        'sort'  => 4,
     ], [
         'key' => 'customers.addresses',
         'name' => 'admin::app.acl.addresses',

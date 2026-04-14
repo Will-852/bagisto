@@ -184,11 +184,13 @@ class RMAController extends Controller
         /**
          * Initial message indicating the processing of the RMA request.
          */
-        $this->rmaMessageRepository->create([
+        // SECURITY-PATCH: #6 — is_admin set explicitly after create (not via mass assignment)
+        $rmaMsg = $this->rmaMessageRepository->create([
             'rma_id' => $rma->id,
             'message' => trans('shop::app.rma.mail.customer-conversation.process'),
-            'is_admin' => 1,
         ]);
+        $rmaMsg->is_admin = 1;
+        $rmaMsg->save();
 
         /**
          * Creation of RMA images for the newly created RMA record.
@@ -237,6 +239,13 @@ class RMAController extends Controller
      */
     public function getOrderItems(int $orderId)
     {
+        // SECURITY-PATCH: #5 — IDOR fix: verify the order belongs to the authenticated customer
+        $customerId = auth()->guard('customer')->id();
+
+        if (! Order::where('id', $orderId)->where('customer_id', $customerId)->exists()) {
+            abort(403);
+        }
+
         return $this->rmaHelper->getOrderItems($orderId);
     }
 
@@ -268,11 +277,13 @@ class RMAController extends Controller
 
             Event::dispatch('customer.rma.request.update.after', $rma);
 
-            $this->rmaMessageRepository->create([
+            // SECURITY-PATCH: #6
+            $rmaMsg = $this->rmaMessageRepository->create([
                 'message' => trans('shop::app.rma.mail.customer-conversation.solved'),
                 'rma_id' => $id,
-                'is_admin' => 1,
             ]);
+            $rmaMsg->is_admin = 1;
+            $rmaMsg->save();
         }
 
         session()->flash('success', trans('shop::app.rma.response.update-success'));
@@ -310,13 +321,15 @@ class RMAController extends Controller
 
             Event::dispatch('customer.rma.request.update.after', $rma);
 
-            $this->rmaMessageRepository->create([
+            // SECURITY-PATCH: #6
+            $rmaMsg = $this->rmaMessageRepository->create([
                 'message' => trans('shop::app.rma.mail.customer-conversation.process'),
                 'rma_id' => $id,
-                'is_admin' => 1,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
+            $rmaMsg->is_admin = 1;
+            $rmaMsg->save();
         }
 
         session()->flash('success', trans('shop::app.rma.response.update-success'));

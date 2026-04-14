@@ -57,18 +57,21 @@ class RegistrationController extends Controller
             'password_confirmation',
             'is_subscribed',
         ]), [
-            'password' => bcrypt(request()->input('password')),
-            'api_token' => Str::random(80),
-            'is_verified' => ! core()->getConfigData('customer.settings.email.verification'),
-            'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => $customerGroup])->id,
-            'channel_id' => core()->getCurrentChannel()->id,
-            'token' => md5(uniqid(rand(), true)),
+            'password'                  => bcrypt(request()->input('password')),
+            'api_token'                 => Str::random(80),
+            'customer_group_id'         => $this->customerGroupRepository->findOneWhere(['code' => $customerGroup])->id,
+            'channel_id'                => core()->getCurrentChannel()->id,
+            'token'                     => Str::random(64),
             'subscribed_to_news_letter' => (bool) (request()->input('is_subscribed') ?? $subscription?->is_subscribed),
         ]);
 
         Event::dispatch('customer.registration.before');
 
         $customer = $this->customerRepository->create($data);
+
+        // SECURITY-PATCH: #17 + #14 — is_verified set explicitly (not via mass assignment); token uses Str::random(64)
+        $customer->is_verified = ! core()->getConfigData('customer.settings.email.verification');
+        $customer->save();
 
         if ($subscription) {
             $this->subscriptionRepository->update([
@@ -117,10 +120,10 @@ class RegistrationController extends Controller
         $customer = $this->customerRepository->findOneByField('token', $token);
 
         if ($customer) {
-            $this->customerRepository->update([
-                'is_verified' => 1,
-                'token' => null,
-            ], $customer->id);
+            // SECURITY-PATCH: #17 — is_verified set directly (not via mass assignment)
+            $customer->is_verified = 1;
+            $customer->token = null;
+            $customer->save();
 
             if ((bool) core()->getConfigData('emails.general.notifications.emails.general.notifications.registration')) {
                 Mail::queue(new RegistrationNotification($customer));
@@ -144,14 +147,16 @@ class RegistrationController extends Controller
      */
     public function resendVerificationEmail($email)
     {
+        // SECURITY-PATCH: #14 — Str::random(64) replaces md5(uniqid()) for unpredictable tokens
         $verificationData = [
             'email' => $email,
-            'token' => md5(uniqid(rand(), true)),
+            'token' => Str::random(64),
         ];
 
         $customer = $this->customerRepository->findOneByField('email', $email);
 
-        $this->customerRepository->update(['token' => $verificationData['token']], $customer->id);
+        $customer->token = $verificationData['token'];
+        $customer->save();
 
         try {
             Mail::queue(new EmailVerificationNotification($verificationData));

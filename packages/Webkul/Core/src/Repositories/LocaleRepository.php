@@ -96,9 +96,17 @@ class LocaleRepository extends Repository
 
         foreach ($localeImages['logo_path'] as $image) {
             if ($image instanceof UploadedFile) {
+                // SECURITY-PATCH: #16 — use server-side MIME detection instead of client-supplied extension
+                $ext = strtolower($image->extension());
+                $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+
+                if (! in_array($ext, $allowed)) {
+                    continue;
+                }
+
                 $locale->logo_path = $image->storeAs(
                     'locales',
-                    $locale->code.'.'.$image->getClientOriginalExtension()
+                    $locale->code.'.'.$ext
                 );
 
                 $locale->save();

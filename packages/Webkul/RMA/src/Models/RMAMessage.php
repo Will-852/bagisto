@@ -19,10 +19,10 @@ class RMAMessage extends Model implements RMAMessageContract
      *
      * @var array
      */
+    // SECURITY-PATCH: #6 — is_admin removed from fillable; set explicitly in controllers to prevent customer forgery
     protected $fillable = [
         'message',
         'rma_id',
-        'is_admin',
         'attachment_path',
         'attachment',
     ];

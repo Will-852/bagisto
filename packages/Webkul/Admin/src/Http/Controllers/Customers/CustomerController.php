@@ -94,7 +94,6 @@ class CustomerController extends Controller
 
         $data = array_merge([
             'password' => bcrypt($password),
-            'is_verified' => 1,
         ], request()->only([
             'first_name',
             'last_name',
@@ -113,6 +112,10 @@ class CustomerController extends Controller
         Event::dispatch('customer.create.before');
 
         $customer = $this->customerRepository->create($data);
+
+        // SECURITY-PATCH: #17 — is_verified set explicitly after create (not via mass assignment)
+        $customer->is_verified = 1;
+        $customer->save();
 
         if (core()->getConfigData('emails.general.notifications.emails.general.notifications.customer_account_credentials')) {
             try {
@@ -213,6 +216,11 @@ class CustomerController extends Controller
      */
     public function loginAsCustomer(int $id)
     {
+        // SECURITY-PATCH: #11 — gate behind ACL key; only admins with explicit permission can impersonate customers
+        if (! bouncer()->hasPermission('customers.customers.login_as_customer')) {
+            abort(403);
+        }
+
         $customer = $this->customerRepository->findOrFail($id);
 
         auth()->guard('customer')->login($customer);
